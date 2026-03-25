@@ -1,18 +1,23 @@
 import { Router, type IRouter } from "express";
 import { AgentsClient } from "@azure/ai-agents";
-import { DefaultAzureCredential } from "@azure/identity";
+import { ClientSecretCredential } from "@azure/identity";
 import { SendMessageBody, SendMessageResponse, CreateThreadResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 function getClient(): AgentsClient {
   const projectEndpoint = process.env["AZURE_AI_PROJECT_ENDPOINT"];
+  const tenantId = process.env["AZURE_TENANT_ID"];
+  const clientId = process.env["AZURE_CLIENT_ID"];
+  const clientSecret = process.env["AZURE_CLIENT_SECRET"];
 
-  if (!projectEndpoint) {
-    throw new Error("AZURE_AI_PROJECT_ENDPOINT environment variable must be set");
+  if (!projectEndpoint || !tenantId || !clientId || !clientSecret) {
+    throw new Error(
+      "AZURE_AI_PROJECT_ENDPOINT, AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables must be set",
+    );
   }
 
-  const credential = new DefaultAzureCredential();
+  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
   return new AgentsClient(projectEndpoint, credential);
 }
 
@@ -71,7 +76,7 @@ router.post("/chat", async (req, res) => {
     if (lastAssistantMsg) {
       for (const block of lastAssistantMsg.content) {
         if (block.type === "text") {
-          reply += block.text.text;
+          reply += block.text.value;
         }
       }
     }
