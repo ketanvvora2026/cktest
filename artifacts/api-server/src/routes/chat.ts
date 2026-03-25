@@ -1,27 +1,19 @@
 import { Router, type IRouter } from "express";
-import OpenAI from "openai";
+import { AgentsClient } from "@azure/ai-agents";
+import { DefaultAzureCredential } from "@azure/identity";
 import { SendMessageBody, SendMessageResponse, CreateThreadResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function getClient(): OpenAI {
-  const servicesEndpoint = process.env["AZURE_AI_SERVICES_ENDPOINT"];
-  const apiKey = process.env["AZURE_AI_API_KEY"];
+function getClient(): AgentsClient {
+  const projectEndpoint = process.env["AZURE_AI_PROJECT_ENDPOINT"];
 
-  if (!servicesEndpoint || !apiKey) {
-    throw new Error(
-      "AZURE_AI_SERVICES_ENDPOINT and AZURE_AI_API_KEY environment variables must be set",
-    );
+  if (!projectEndpoint) {
+    throw new Error("AZURE_AI_PROJECT_ENDPOINT environment variable must be set");
   }
 
-  const baseURL = servicesEndpoint.replace(/\/$/, "") + "/openai";
-
-  return new OpenAI({
-    apiKey,
-    baseURL,
-    defaultHeaders: { "api-key": apiKey },
-    defaultQuery: { "api-version": "2024-05-01-preview" },
-  });
+  const credential = new DefaultAzureCredential();
+  return new AgentsClient(projectEndpoint, credential);
 }
 
 function getAgentId(): string {
@@ -35,7 +27,7 @@ function getAgentId(): string {
 router.post("/chat/threads", async (req, res) => {
   try {
     const client = getClient();
-    const thread = await client.beta.threads.create();
+    const thread = await client.threads.create();
     const data = CreateThreadResponse.parse({ threadId: thread.id });
     res.json(data);
   } catch (err: unknown) {
@@ -51,23 +43,15 @@ router.post("/chat", async (req, res) => {
     const client = getClient();
     const agentId = getAgentId();
 
-    // Create a new thread if one wasn't provided
     let threadId = body.threadId;
     if (!threadId) {
-      const thread = await client.beta.threads.create();
+      const thread = await client.threads.create();
       threadId = thread.id;
     }
 
-    // Add the user message to the thread
-    await client.beta.threads.messages.create(threadId, {
-      role: "user",
-      content: body.message,
-    });
+    await client.messages.create(threadId, "user", body.message);
 
-    // Run the agent and poll until completion
-    const run = await client.beta.threads.runs.createAndPoll(threadId, {
-      assistant_id: agentId,
-    });
+    const run = await client.runs.createAndPoll(threadId, agentId);
 
     if (run.status !== "completed") {
       req.log.error({ status: run.status }, "Agent run did not complete");
@@ -75,19 +59,19 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    // Get the latest assistant message
-    const messages = await client.beta.threads.messages.list(threadId, {
-      order: "desc",
-      limit: 1,
-    });
+    const messages = await client.messages.list(threadId);
+    const allMessages = [];
+    for await (const msg of messages) {
+      allMessages.push(msg);
+    }
 
-    const lastMessage = messages.data[0];
+    const lastAssistantMsg = allMessages.find((m) => m.role === "assistant");
     let reply = "";
 
-    if (lastMessage && lastMessage.role === "assistant") {
-      for (const block of lastMessage.content) {
+    if (lastAssistantMsg) {
+      for (const block of lastAssistantMsg.content) {
         if (block.type === "text") {
-          reply += block.text.value;
+          reply += block.text.text;
         }
       }
     }
