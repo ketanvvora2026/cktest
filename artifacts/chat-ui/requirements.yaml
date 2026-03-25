@@ -1,0 +1,15 @@
+packages:
+  "framer-motion": "For smooth page transitions and chat message entry animations"
+  "react-markdown": "To render markdown in agent replies"
+  "remark-gfm": "For github flavored markdown support in react-markdown"
+  "uuid": "For generating unique local message IDs"
+  "date-fns": "For formatting message timestamps elegantly"
+  "zustand": "For robust local state management of chat history across components"
+  "clsx": "For conditional tailwind class merging"
+  "tailwind-merge": "For resolving tailwind class conflicts"
+  "@tailwindcss/typography": "For styling markdown content in chat bubbles"
+images: []
+notes:
+  - The backend provides /api/chat and /api/chat/threads endpoints but does not store message history.
+  - Chat history and threads are managed locally using Zustand with localStorage persistence.
+  - When starting a new chat, the UI calls createThread to get a thread ID, then uses that for subsequent messages.

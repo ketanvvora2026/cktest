@@ -1,0 +1,105 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+
+  /* Enterprise Clean Professional Palette */
+  --color-background: hsl(210 40% 98%); /* Slate 50 */
+  --color-foreground: hsl(222 47% 11%); /* Slate 900 */
+  
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+  --color-card-border: hsl(214 32% 91%); /* Slate 200 */
+  
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
+  --color-popover-border: hsl(214 32% 91%);
+  
+  --color-primary: hsl(212 100% 48%); /* Azure Blue */
+  --color-primary-foreground: hsl(0 0% 100%);
+  
+  --color-secondary: hsl(210 40% 96%); /* Slate 100 */
+  --color-secondary-foreground: hsl(222 47% 11%);
+  
+  --color-muted: hsl(210 40% 96%);
+  --color-muted-foreground: hsl(215 16% 47%); /* Slate 500 */
+  
+  --color-accent: hsl(210 40% 96%);
+  --color-accent-foreground: hsl(222 47% 11%);
+  
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  
+  --color-border: hsl(214 32% 91%);
+  --color-input: hsl(214 32% 91%);
+  --color-ring: hsl(212 100% 48%);
+  
+  --color-sidebar: hsl(0 0% 100%);
+  --color-sidebar-foreground: hsl(222 47% 11%);
+  --color-sidebar-border: hsl(214 32% 91%);
+  --color-sidebar-accent: hsl(210 40% 96%);
+  --color-sidebar-accent-foreground: hsl(222 47% 11%);
+  
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+
+  /* Custom Scrollbar for a more premium feel */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/30 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground/50;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-xl border-border shadow-sm;
+  }
+  
+  .markdown-content p {
+    @apply mb-4 last:mb-0 leading-relaxed;
+  }
+  .markdown-content pre {
+    @apply bg-slate-900 text-slate-50 p-4 rounded-lg overflow-x-auto my-4 text-sm;
+  }
+  .markdown-content code {
+    @apply font-mono text-sm bg-slate-100 text-slate-800 px-1.5 py-0.5 rounded;
+  }
+  .markdown-content pre code {
+    @apply bg-transparent text-inherit p-0;
+  }
+  .markdown-content ul {
+    @apply list-disc pl-6 mb-4 space-y-2;
+  }
+  .markdown-content ol {
+    @apply list-decimal pl-6 mb-4 space-y-2;
+  }
+  .markdown-content a {
+    @apply text-primary hover:underline font-medium;
+  }
+  .markdown-content h1, .markdown-content h2, .markdown-content h3 {
+    @apply font-semibold text-foreground mt-6 mb-3;
+  }
+}

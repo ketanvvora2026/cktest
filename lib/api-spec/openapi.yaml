@@ -1,15 +1,16 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Azure AI Chat API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: chat
+    description: Chat operations
 paths:
   /healthz:
     get:
@@ -24,6 +25,50 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /chat:
+    post:
+      operationId: sendMessage
+      tags: [chat]
+      summary: Send a chat message
+      description: Sends a user message to the Azure AI Foundry agent and returns the response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChatRequest"
+      responses:
+        "200":
+          description: Agent response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatResponse"
+        "500":
+          description: Error communicating with agent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /chat/threads:
+    post:
+      operationId: createThread
+      tags: [chat]
+      summary: Create a new conversation thread
+      description: Creates a new thread with the Azure AI Foundry agent
+      responses:
+        "200":
+          description: Thread created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ThreadResponse"
+        "500":
+          description: Error creating thread
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +78,42 @@ components:
           type: string
       required:
         - status
-
+    ChatRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          description: The user's message
+        threadId:
+          type: string
+          description: Optional thread ID to continue a conversation
+      required:
+        - message
+    ChatResponse:
+      type: object
+      properties:
+        reply:
+          type: string
+          description: The agent's response
+        threadId:
+          type: string
+          description: The thread ID for continuing the conversation
+      required:
+        - reply
+        - threadId
+    ThreadResponse:
+      type: object
+      properties:
+        threadId:
+          type: string
+          description: The newly created thread ID
+      required:
+        - threadId
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+      required:
+        - error

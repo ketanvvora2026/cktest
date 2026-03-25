@@ -10,6 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@azure/ai-projects": "^2.0.1",
+    "@azure/identity": "^4.13.1",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
     "cookie-parser": "^1.4.7",
