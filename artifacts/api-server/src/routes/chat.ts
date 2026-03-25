@@ -1,45 +1,27 @@
 import { Router, type IRouter } from "express";
-import { AgentsClient } from "@azure/ai-agents";
-import type { TokenCredential } from "@azure/core-auth";
+import OpenAI from "openai";
 import { SendMessageBody, SendMessageResponse, CreateThreadResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function getClient(): AgentsClient {
-  const endpoint = process.env["AZURE_AI_PROJECT_ENDPOINT"];
+function getClient(): OpenAI {
+  const servicesEndpoint = process.env["AZURE_AI_SERVICES_ENDPOINT"];
   const apiKey = process.env["AZURE_AI_API_KEY"];
 
-  if (!endpoint || !apiKey) {
+  if (!servicesEndpoint || !apiKey) {
     throw new Error(
-      "AZURE_AI_PROJECT_ENDPOINT and AZURE_AI_API_KEY environment variables must be set",
+      "AZURE_AI_SERVICES_ENDPOINT and AZURE_AI_API_KEY environment variables must be set",
     );
   }
 
-  // The @azure/ai-agents SDK strips custom credentials options internally.
-  // Workaround: create client with a no-op credential, then patch the pipeline
-  // to remove the default Bearer-token policy and inject the api-key header.
-  const noopCredential: TokenCredential = {
-    getToken: async () => ({ token: "", expiresOnTimestamp: 0 }),
-  };
+  const baseURL = servicesEndpoint.replace(/\/$/, "") + "/openai";
 
-  const client = new AgentsClient(endpoint, noopCredential);
-
-  // Remove the bearer token auth policy added by the SDK
-  client.pipeline.removePolicy({ name: "bearerTokenAuthenticationPolicy" });
-
-  // Add our api-key header policy in the Sign phase (runs last before send)
-  client.pipeline.addPolicy(
-    {
-      name: "azureApiKeyPolicy",
-      sendRequest: (req, next) => {
-        req.headers.set("api-key", apiKey);
-        return next(req);
-      },
-    },
-    { phase: "Sign" },
-  );
-
-  return client;
+  return new OpenAI({
+    apiKey,
+    baseURL,
+    defaultHeaders: { "api-key": apiKey },
+    defaultQuery: { "api-version": "2024-05-01-preview" },
+  });
 }
 
 function getAgentId(): string {
@@ -53,7 +35,7 @@ function getAgentId(): string {
 router.post("/chat/threads", async (req, res) => {
   try {
     const client = getClient();
-    const thread = await client.threads.create();
+    const thread = await client.beta.threads.create();
     const data = CreateThreadResponse.parse({ threadId: thread.id });
     res.json(data);
   } catch (err: unknown) {
@@ -72,18 +54,20 @@ router.post("/chat", async (req, res) => {
     // Create a new thread if one wasn't provided
     let threadId = body.threadId;
     if (!threadId) {
-      const thread = await client.threads.create();
+      const thread = await client.beta.threads.create();
       threadId = thread.id;
     }
 
     // Add the user message to the thread
-    await client.messages.create(threadId, {
+    await client.beta.threads.messages.create(threadId, {
       role: "user",
       content: body.message,
     });
 
-    // Run the agent and wait for completion (polls internally)
-    const run = await client.runs.createAndPoll(threadId, agentId);
+    // Run the agent and poll until completion
+    const run = await client.beta.threads.runs.createAndPoll(threadId, {
+      assistant_id: agentId,
+    });
 
     if (run.status !== "completed") {
       req.log.error({ status: run.status }, "Agent run did not complete");
@@ -92,16 +76,19 @@ router.post("/chat", async (req, res) => {
     }
 
     // Get the latest assistant message
+    const messages = await client.beta.threads.messages.list(threadId, {
+      order: "desc",
+      limit: 1,
+    });
+
+    const lastMessage = messages.data[0];
     let reply = "";
-    const messagesPage = await client.messages.list(threadId, { order: "desc" });
-    for await (const msg of messagesPage) {
-      if (msg.role === "assistant") {
-        for (const block of msg.content) {
-          if (block.type === "text") {
-            reply += block.text.value;
-          }
+
+    if (lastMessage && lastMessage.role === "assistant") {
+      for (const block of lastMessage.content) {
+        if (block.type === "text") {
+          reply += block.text.value;
         }
-        break; // only need the first (most recent) assistant message
       }
     }
 
