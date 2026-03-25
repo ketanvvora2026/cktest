@@ -48,6 +48,25 @@ Every package extends `tsconfig.base.json` which sets `composite: true`. The roo
 - `pnpm run build` — runs `typecheck` first, then recursively runs `build` in all packages that define it
 - `pnpm run typecheck` — runs `tsc --build --emitDeclarationOnly` using project references
 
+## Artifacts
+
+### `artifacts/chat-ui` (`@workspace/chat-ui`)
+
+React + Vite frontend chat application. Connects to the Azure AI Foundry agent via the backend API.
+
+- Clean chat UI with sidebar for conversation history
+- Markdown rendering for agent replies
+- Quick-start prompt suggestions
+- Typing/loading indicators
+- Full-page responsive layout
+
+### Azure AI Integration
+
+The backend proxies requests to Azure AI Foundry. Required environment secrets:
+- `AZURE_AI_PROJECT_ENDPOINT` — Project endpoint URL from ai.azure.com
+- `AZURE_AI_API_KEY` — API key from ai.azure.com project settings
+- `AZURE_AI_AGENT_ID` — Agent ID from the Agents section in ai.azure.com
+
 ## Packages
 
 ### `artifacts/api-server` (`@workspace/api-server`)
