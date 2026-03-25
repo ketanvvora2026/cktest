@@ -1,23 +1,21 @@
 import { Router, type IRouter } from "express";
 import { AgentsClient } from "@azure/ai-agents";
-import { ClientSecretCredential } from "@azure/identity";
+import { DefaultAzureCredential } from "@azure/identity";
 import { SendMessageBody, SendMessageResponse, CreateThreadResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
 function getClient(): AgentsClient {
   const projectEndpoint = process.env["AZURE_AI_PROJECT_ENDPOINT"];
-  const tenantId = process.env["AZURE_TENANT_ID"];
-  const clientId = process.env["AZURE_CLIENT_ID"];
-  const clientSecret = process.env["AZURE_CLIENT_SECRET"];
 
-  if (!projectEndpoint || !tenantId || !clientId || !clientSecret) {
-    throw new Error(
-      "AZURE_AI_PROJECT_ENDPOINT, AZURE_TENANT_ID, AZURE_CLIENT_ID, and AZURE_CLIENT_SECRET environment variables must be set",
-    );
+  if (!projectEndpoint) {
+    throw new Error("AZURE_AI_PROJECT_ENDPOINT environment variable must be set");
   }
 
-  const credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
+  // DefaultAzureCredential automatically uses:
+  // - AZURE_TENANT_ID + AZURE_CLIENT_ID + AZURE_CLIENT_SECRET env vars (dev/service principal)
+  // - Managed Identity when deployed on Azure Web App (no credentials needed)
+  const credential = new DefaultAzureCredential();
   return new AgentsClient(projectEndpoint, credential);
 }
 

@@ -1,0 +1,58 @@
+name: Deploy to Azure Web App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        run: BASE_PATH=/ pnpm --filter @workspace/chat-ui run build
+        env:
+          NODE_ENV: production
+
+      - name: Build backend
+        run: pnpm --filter @workspace/api-server run build
+        env:
+          NODE_ENV: production
+
+      - name: Create self-contained deployment package
+        run: |
+          # pnpm deploy creates a standalone folder with production node_modules only
+          pnpm --filter @workspace/api-server deploy --prod /tmp/azure-deploy
+
+          # Copy built frontend alongside the backend so Express can serve it
+          mkdir -p /tmp/azure-deploy/artifacts/chat-ui/dist
+          cp -r artifacts/chat-ui/dist/public /tmp/azure-deploy/artifacts/chat-ui/dist/public
+
+          # Zip the deployment package
+          cd /tmp/azure-deploy && zip -r $GITHUB_WORKSPACE/deploy.zip .
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: deploy.zip
+          startup-command: "node dist/index.mjs"
