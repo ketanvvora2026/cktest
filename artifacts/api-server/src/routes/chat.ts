@@ -1,11 +1,11 @@
 import { Router, type IRouter } from "express";
-import { AIProjectClient } from "@azure/ai-projects";
-import { AzureKeyCredential } from "@azure/core-auth";
+import { AgentsClient } from "@azure/ai-agents";
+import type { TokenCredential } from "@azure/core-auth";
 import { SendMessageBody, SendMessageResponse, CreateThreadResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
-function getClient() {
+function getClient(): AgentsClient {
   const endpoint = process.env["AZURE_AI_PROJECT_ENDPOINT"];
   const apiKey = process.env["AZURE_AI_API_KEY"];
 
@@ -15,10 +15,34 @@ function getClient() {
     );
   }
 
-  return AIProjectClient.fromEndpoint(endpoint, new AzureKeyCredential(apiKey));
+  // The @azure/ai-agents SDK strips custom credentials options internally.
+  // Workaround: create client with a no-op credential, then patch the pipeline
+  // to remove the default Bearer-token policy and inject the api-key header.
+  const noopCredential: TokenCredential = {
+    getToken: async () => ({ token: "", expiresOnTimestamp: 0 }),
+  };
+
+  const client = new AgentsClient(endpoint, noopCredential);
+
+  // Remove the bearer token auth policy added by the SDK
+  client.pipeline.removePolicy({ name: "bearerTokenAuthenticationPolicy" });
+
+  // Add our api-key header policy in the Sign phase (runs last before send)
+  client.pipeline.addPolicy(
+    {
+      name: "azureApiKeyPolicy",
+      sendRequest: (req, next) => {
+        req.headers.set("api-key", apiKey);
+        return next(req);
+      },
+    },
+    { phase: "Sign" },
+  );
+
+  return client;
 }
 
-function getAgentId() {
+function getAgentId(): string {
   const agentId = process.env["AZURE_AI_AGENT_ID"];
   if (!agentId) {
     throw new Error("AZURE_AI_AGENT_ID environment variable must be set");
@@ -29,7 +53,7 @@ function getAgentId() {
 router.post("/chat/threads", async (req, res) => {
   try {
     const client = getClient();
-    const thread = await client.agents.threads.create();
+    const thread = await client.threads.create();
     const data = CreateThreadResponse.parse({ threadId: thread.id });
     res.json(data);
   } catch (err: unknown) {
@@ -45,20 +69,21 @@ router.post("/chat", async (req, res) => {
     const client = getClient();
     const agentId = getAgentId();
 
+    // Create a new thread if one wasn't provided
     let threadId = body.threadId;
     if (!threadId) {
-      const thread = await client.agents.threads.create();
+      const thread = await client.threads.create();
       threadId = thread.id;
     }
 
-    await client.agents.messages.create(threadId, {
+    // Add the user message to the thread
+    await client.messages.create(threadId, {
       role: "user",
       content: body.message,
     });
 
-    const run = await client.agents.runs.createAndPoll(threadId, {
-      assistantId: agentId,
-    });
+    // Run the agent and wait for completion (polls internally)
+    const run = await client.runs.createAndPoll(threadId, agentId);
 
     if (run.status !== "completed") {
       req.log.error({ status: run.status }, "Agent run did not complete");
@@ -66,15 +91,17 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    const messages = await client.agents.messages.list(threadId, { order: "desc", limit: 1 });
-    const lastMessage = messages.data[0];
-
+    // Get the latest assistant message
     let reply = "";
-    if (lastMessage && lastMessage.role === "assistant") {
-      for (const block of lastMessage.content) {
-        if (block.type === "text") {
-          reply += block.text.value;
+    const messagesPage = await client.messages.list(threadId, { order: "desc" });
+    for await (const msg of messagesPage) {
+      if (msg.role === "assistant") {
+        for (const block of msg.content) {
+          if (block.type === "text") {
+            reply += block.text.value;
+          }
         }
+        break; // only need the first (most recent) assistant message
       }
     }
 
