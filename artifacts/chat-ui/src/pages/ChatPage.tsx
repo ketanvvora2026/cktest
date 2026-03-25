@@ -84,7 +84,7 @@ export const ChatPage: React.FC = () => {
                     <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinelinejoin="round"/>
                   </svg>
                 </div>
-                <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">How can I help you today?</h2>
+                <h2 className="text-2xl font-bold tracking-tight text-foreground mb-2">I'm your Planning Agent - How can I help you today?</h2>
                 <p className="text-muted-foreground max-w-[500px]">
                   I am connected to your Azure AI Foundry project. Ask me anything, or type a prompt below to get started.
                 </p>
