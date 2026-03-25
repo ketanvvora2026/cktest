@@ -88,19 +88,6 @@ export const ChatPage: React.FC = () => {
                 <p className="text-muted-foreground max-w-[500px]">
                   I am connected to your Azure AI Foundry project. Ask me anything, or type a prompt below to get started.
                 </p>
-                
-                {/* Suggestion Chips */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-10 w-full max-w-2xl">
-                  {["Analyze my latest dataset", "Draft an executive summary", "Explain the deployment process", "Write a python script for blob storage"].map(suggestion => (
-                    <button 
-                      key={suggestion}
-                      onClick={() => handleSendMessage(suggestion)}
-                      className="p-4 text-left rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-accent/50 transition-all text-sm font-medium text-card-foreground shadow-sm"
-                    >
-                      {suggestion}
-                    </button>
-                  ))}
-                </div>
               </div>
             ) : (
               <div className="flex flex-col mt-auto pt-4">
