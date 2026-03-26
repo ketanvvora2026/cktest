@@ -31,6 +31,7 @@ jobs:
         run: BASE_PATH=/ pnpm --filter @workspace/chat-ui run build
         env:
           NODE_ENV: production
+          PORT: "3000"
 
       - name: Build backend
         run: pnpm --filter @workspace/api-server run build
