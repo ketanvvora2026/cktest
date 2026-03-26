@@ -41,7 +41,7 @@ jobs:
       - name: Create self-contained deployment package
         run: |
           # pnpm deploy creates a standalone folder with production node_modules only
-          pnpm --filter @workspace/api-server deploy --prod /tmp/azure-deploy
+          pnpm --filter @workspace/api-server deploy --prod --legacy /tmp/azure-deploy
 
           # Copy built frontend alongside the backend so Express can serve it
           mkdir -p /tmp/azure-deploy/artifacts/chat-ui/dist
