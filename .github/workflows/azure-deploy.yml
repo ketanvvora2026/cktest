@@ -43,6 +43,9 @@ jobs:
           # pnpm deploy creates a standalone folder with production node_modules only
           pnpm --filter @workspace/api-server deploy --prod --legacy /tmp/azure-deploy
 
+          # dist/ is in .gitignore so pnpm deploy skips it - copy it manually
+          cp -r artifacts/api-server/dist /tmp/azure-deploy/dist
+
           # Copy built frontend alongside the backend so Express can serve it
           mkdir -p /tmp/azure-deploy/artifacts/chat-ui/dist
           cp -r artifacts/chat-ui/dist/public /tmp/azure-deploy/artifacts/chat-ui/dist/public
