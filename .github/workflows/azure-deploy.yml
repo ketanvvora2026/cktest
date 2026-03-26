@@ -40,15 +40,35 @@ jobs:
 
       - name: Create self-contained deployment package
         run: |
-          # pnpm deploy creates a standalone folder with production node_modules only
-          pnpm --filter @workspace/api-server deploy --prod --legacy /tmp/azure-deploy
+          mkdir -p /tmp/azure-deploy
 
-          # dist/ is in .gitignore so pnpm deploy skips it - copy it manually
+          # Copy the bundled backend (esbuild bundles everything except @azure/* packages)
           cp -r artifacts/api-server/dist /tmp/azure-deploy/dist
 
-          # Copy built frontend alongside the backend so Express can serve it
+          # Create a minimal package.json - only @azure/* packages need node_modules
+          # (express, pino, cors, etc. are all bundled by esbuild into dist/index.mjs)
+          cat > /tmp/azure-deploy/package.json << 'EOF'
+          {
+            "name": "azure-chat-app",
+            "version": "1.0.0",
+            "type": "module",
+            "scripts": {
+              "start": "node --enable-source-maps ./dist/index.mjs"
+            },
+            "dependencies": {
+              "@azure/ai-agents": "^1.1.0",
+              "@azure/core-auth": "^1.10.1",
+              "@azure/identity": "^4.13.1"
+            }
+          }
+          EOF
+
+          # Install only the Azure packages using npm (flat node_modules, no symlinks)
+          cd /tmp/azure-deploy && npm install --omit=dev
+
+          # Copy built frontend so Express can serve it in production
           mkdir -p /tmp/azure-deploy/artifacts/chat-ui/dist
-          cp -r artifacts/chat-ui/dist/public /tmp/azure-deploy/artifacts/chat-ui/dist/public
+          cp -r $GITHUB_WORKSPACE/artifacts/chat-ui/dist/public /tmp/azure-deploy/artifacts/chat-ui/dist/public
 
           # Zip the deployment package
           cd /tmp/azure-deploy && zip -r $GITHUB_WORKSPACE/deploy.zip .
