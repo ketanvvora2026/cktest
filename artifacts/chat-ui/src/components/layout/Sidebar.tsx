@@ -27,7 +27,7 @@ export const Sidebar: React.FC = () => {
               <path d="M2 12L12 17L22 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinelinejoin="round"/>
             </svg>
           </div>
-          <h1 className="font-bold text-lg text-sidebar-foreground">Azure AI Chat</h1>
+          <h1 className="font-bold text-lg text-sidebar-foreground">Connected Kerb ICO Chat</h1>
         </div>
         
         <Button 

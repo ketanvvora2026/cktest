@@ -61,7 +61,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled }) => {
           value={input}
           onChange={handleInput}
           onKeyDown={handleKeyDown}
-          placeholder="Message Azure AI Foundry agent..."
+          placeholder="Message Connected Kerb ICO Agent..."
           className="flex-1 min-h-[24px] max-h-[200px] border-0 focus-visible:ring-0 px-0 py-3 shadow-none bg-transparent resize-none overflow-y-auto"
           disabled={disabled}
           rows={1}
@@ -80,7 +80,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSend, disabled }) => {
       </form>
       <div className="text-center mt-3 mb-2">
         <p className="text-[11px] text-muted-foreground font-medium">
-          Azure AI Chat can make mistakes. Consider verifying important information.
+          Connected Kerb ICO Chat can make mistakes. Consider verifying important information.
         </p>
       </div>
     </div>

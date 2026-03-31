@@ -68,7 +68,7 @@ export const ChatPage: React.FC = () => {
             {activeThread?.title || 'New Conversation'}
           </div>
           <div className="text-xs px-2.5 py-1 rounded-full bg-accent text-accent-foreground font-medium border border-border">
-            Azure Foundry Agent
+            Connected Kerb ICO Agent
           </div>
         </header>
 
