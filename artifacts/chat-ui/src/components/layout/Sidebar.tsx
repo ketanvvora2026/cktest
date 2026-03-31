@@ -104,7 +104,7 @@ export const Sidebar: React.FC = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-sidebar-foreground truncate">Enterprise User</p>
-            <p className="text-xs text-muted-foreground truncate">Replit Workspace</p>
+            <p className="text-xs text-muted-foreground truncate">Azure AI Foundry</p>
           </div>
           <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
             <Settings size={18} />
